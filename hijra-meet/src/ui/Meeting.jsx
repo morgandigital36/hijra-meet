@@ -380,16 +380,20 @@ export default function Meeting({ eventId }) {
                         <div>
                             <h1 className="text-white font-bold text-sm leading-tight">Hijra Meet</h1>
                             <div className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span className={`w-1.5 h-1.5 rounded-full ${localParticipant?.stream ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
                                 <span className="text-gray-400 text-xs">{eventId.slice(0, 12)}...</span>
                             </div>
                         </div>
                     </div>
-                    {isHost && (
-                        <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded border border-emerald-500/30">
-                            HOST
-                        </span>
-                    )}
+                </div>
+
+                {/* Debug Info Overlay */}
+                <div className="hidden md:flex flex-col items-end mr-4 pointer-events-none opacity-50 hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 text-[10px] font-mono text-gray-400">
+                        <span>SIG: {channel?.state || '?'}</span>
+                        <span>ICE: {webrtcManager.getConnectionStats().ice}</span>
+                        <span>CONN: {webrtcManager.getConnectionStats().conn}</span>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">

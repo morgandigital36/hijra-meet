@@ -15,13 +15,23 @@ const ICE_CONFIG = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-    ]
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }
+    ],
+    iceCandidatePoolSize: 10,
 };
 
 export const webrtcManager = {
     getPeerConnection: () => peerConnection,
     getSessionId: () => cloudflareSessionId,
     isReady: () => peerConnection !== null && cloudflareSessionId !== null,
+    getConnectionStats: () => ({
+        ice: peerConnection?.iceConnectionState || 'closed',
+        conn: peerConnection?.connectionState || 'closed',
+        session: cloudflareSessionId ? 'active' : 'inactive'
+    }),
 
     initPeerConnection: async (eventId) => {
         // If already initialized, return immediately
@@ -192,9 +202,20 @@ export const webrtcManager = {
         if (retryCount === 0 && remoteInfo.publishedAt) {
             const timeSincePublish = Date.now() - new Date(remoteInfo.publishedAt).getTime();
             const minWaitTime = 3000; // Wait at least 3 seconds from publish
+
+            // Handle clock skew: clamp max wait to 5 seconds
+            // Logic: we want to wait UNTIL (publishedAt + 3000ms).
+            // If local clock is ahead, timeSincePublish is large positive. Wait time <= 0.
+            // If local clock is behind, timeSincePublish is negative. Wait time > 3000.
+            // We must clamp it.
+
+            let waitTime = 0;
             if (timeSincePublish < minWaitTime) {
-                const waitTime = minWaitTime - timeSincePublish;
-                console.log(`[WebRTC] Waiting ${waitTime}ms for tracks to propagate...`);
+                waitTime = minWaitTime - timeSincePublish;
+                // Clamp to max 5000ms to handle extreme clock skew
+                if (waitTime > 5000) waitTime = 5000;
+
+                console.log(`[WebRTC] Waiting ${waitTime}ms (clamped) for tracks to propagate...`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
             }
         }
