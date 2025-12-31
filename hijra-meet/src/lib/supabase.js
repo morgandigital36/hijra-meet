@@ -12,10 +12,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-// Create client only if we have valid credentials
+// Create client or fallback to error-throwing proxy
 export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+  : new Proxy({}, {
+    get: () => {
+      throw new Error('Supabase Client not initialized: Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
+    }
+  });
 
 // Auth helpers
 export const auth = {
